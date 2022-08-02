@@ -1,15 +1,31 @@
 use std::fs;
 use std::io;
 use std::env::args;
+use std::io::Write;
 
 fn main() {
     let mut machine = TapeMachine {
         tape: vec![0; 30000],
         data_ptr: 0,
     };
-    let filename = args().nth(1).expect("No filename provided");
-    execute(&parse_file(&filename), &mut machine);
-    debug_print(&machine);
+    if args().len() < 2 {
+        // Running with interactive mode
+        loop {
+            print!(">> ");
+            io::stdout().flush().unwrap();
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).unwrap();
+            if input.trim() == "quit"{
+                break;
+            }
+            execute(&input, &mut machine)
+        }
+    }else{
+        // Running with file mode
+        let filename = args().nth(1).expect("No filename provided");
+        execute(&parse_file(&filename), &mut machine);
+        debug_print(&machine);
+    }
 }
 
 struct TapeMachine{
@@ -38,6 +54,9 @@ fn execute(cmd: &str, machine: &mut TapeMachine) {
                 machine.tape[machine.data_ptr] -= 1;
             }
             '>' => {
+                if machine.tape.len() <= machine.data_ptr {
+                    machine.tape.push(0);
+                }
                 machine.data_ptr += 1;
             }
             '<' => {
@@ -48,6 +67,7 @@ fn execute(cmd: &str, machine: &mut TapeMachine) {
             }
             '.' => {
                 print!("{}", &(machine.tape[machine.data_ptr] as char));
+                io::stdout().flush().unwrap();
             }
             ',' => {
                 let mut input = String::new();
